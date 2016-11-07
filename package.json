@@ -37,11 +37,12 @@
     "jscoverage": "latest",
     "jshint": "~2.4.4",
     "jsonlint": "~1.6.0",
+    "lodash.once": "^4.1.1",
     "mocha": "^2.3.4",
     "mocha-lcov-reporter": "^1.2.0",
     "mock-spawn": "^0.2.1",
     "mockery": "~1.4.0",
-    "nock": "~0.45.0",
+    "nock": "https://github.com/NickStefan/nock/tarball/set-allow-unmock",
     "nodeunit": "latest"
   },
   "bin": {
