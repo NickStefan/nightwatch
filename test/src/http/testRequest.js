@@ -4,6 +4,7 @@ var Logger = common.require('util/logger');
 var nock = require('nock');
 var assert = require('assert');
 var mockery = require('mockery');
+var once = require('lodash.once');
 
 module.exports = {
   'test HttpRequest' : {
@@ -31,6 +32,9 @@ module.exports = {
     },
 
     afterEach: function () {
+      HttpRequest.setTimeout(60000) // back to default after these tests
+      HttpRequest.setRetryAttempts(0);
+
       mockery.disable();
     },
 
@@ -204,6 +208,63 @@ module.exports = {
         done();
       }).send();
 
+    },
+
+    testRequestTimeout: function (done) {
+      nock('http://localhost:4444')
+        .get('/wd/hub/123456/element')
+        .socketDelay(10000)
+        .reply(200, {});
+
+      var options = {
+        path: '/:sessionId/element',
+        method: 'GET',
+        sessionId: '123456'
+      };
+
+      HttpRequest.setTimeout(1000);
+
+      var request = new HttpRequest(options);
+
+      request.on('error', function () {
+        assert.ok(true); // should trigger error on timeout
+        done();
+      }).send();
+
+    },
+
+    testRetryAttempts: function (done) {
+      nock('http://localhost:4444')
+        .get('/wd/hub/123456/element')
+        .socketDelay(10000)
+        .reply(200, {})
+        .get('/wd/hub/123456/element')
+        .socketDelay(100)
+        .reply(200, {})
+
+      var options = {
+        path: '/:sessionId/element',
+        method: 'GET',
+        sessionId: '123456'
+      };
+
+      HttpRequest.setTimeout(800);
+      HttpRequest.setRetryAttempts(1);
+
+      var request = new HttpRequest(options);
+      var doneOnce = once(function(){
+        // the nock library is still passing 200 for the first request
+        // rather than truly timing out
+        done(); 
+      });
+
+      request
+      .on('success', function (result) {
+        assert.ok(true); // should succeed
+        doneOnce();
+      }).send();
+
     }
   }
+
 };
